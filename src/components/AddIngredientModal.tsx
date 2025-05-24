@@ -115,6 +115,7 @@ export default function AddIngredientModal({
       if (!response.ok) throw new Error('Failed to save ingredient');
       reset();
       onAdd();
+      onClose();
     } catch (error) {
       console.error('Error saving ingredient:', error);
       alert('Failed to save ingredient. Please try again.');
