@@ -21,6 +21,7 @@
     "@langchain/core": "^0.1.48",
     "@langchain/openai": "^0.0.14",
     "@prisma/client": "^5.10.2",
+    "@prisma/extension-accelerate": "^2.0.0",
     "date-fns": "^3.3.1",
     "next": "14.1.0",
     "react": "^18",
