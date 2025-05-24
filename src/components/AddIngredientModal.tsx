@@ -100,6 +100,7 @@ export default function AddIngredientModal({
       const payload = { ...data, categoryIds };
       let response;
       if (editingIngredient) {
+        console.log('editingIngredient', editingIngredient);
         response = await fetch(`/api/ingredients/${editingIngredient.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -112,7 +113,10 @@ export default function AddIngredientModal({
           body: JSON.stringify(payload),
         });
       }
-      if (!response.ok) throw new Error('Failed to save ingredient');
+      if (!response.ok) {
+        console.log('response', response);
+        throw new Error('Failed to save ingredient');
+      }
       reset();
       onAdd();
       onClose();

@@ -48,6 +48,8 @@ export async function PUT(
       },
       include: { categories: { include: { category: true } } },
     });
+    console.log('updated!');
+    console.log(updated);
     return NextResponse.json({
       ...updated,
       categories: updated.categories.map((ic: any) => ic.category),

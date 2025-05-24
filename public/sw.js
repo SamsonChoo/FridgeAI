@@ -10,6 +10,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -22,22 +23,22 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(event.request)
         .then(async (response) => {
-          // Cache the successful network response
-          if (response.ok) {
+          // Cache the successful network response, but ONLY if it's a GET request
+          if (response.ok && event.request.method === 'GET') {
             const cache = await caches.open(CACHE_NAME);
             await cache.put(event.request, response.clone());
           }
-          return response;
+          return response; // Always return the network response
         })
         .catch(async () => {
-          // Fallback to cache if network fails
-          const cachedResponse = await caches.match(event.request);
-          if (cachedResponse) {
-            return cachedResponse;
+          // Fallback to cache if network fails (for GET requests only)
+          if (event.request.method === 'GET') { // Only fallback to cache for GET requests
+            const cachedResponse = await caches.match(event.request);
+            if (cachedResponse) {
+              return cachedResponse;
+            }
           }
-          // Optional: Return a generic offline response if no cache is found
-          // return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
-          // Or rethrow the error
+          // If network fails for non-GET or no cache for GET, rethrow or return a specific response
           throw new Error('Network request failed and no cache available.');
         })
     );
@@ -82,5 +83,6 @@ self.addEventListener('activate', (event) => {
         })
       );
     })
+    .then(() => self.clients.claim())
   );
 }); 

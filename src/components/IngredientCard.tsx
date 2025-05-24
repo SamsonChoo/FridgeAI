@@ -30,12 +30,12 @@ function QuantityInfo({ quantity, unit }: { quantity: number; unit: string }) {
   );
 }
 
-// ExpirationInfo: Shows the expiration icon and date
-function ExpirationInfo({ expDate, isExpiringSoon }: { expDate: Date; isExpiringSoon: boolean }) {
+// ExpirationInfo: Shows the expiration icon and date with color coding
+function ExpirationInfo({ expDate, colorClass }: { expDate: Date; colorClass: string }) {
   return (
     <span className="flex items-center gap-1">
       <svg
-        className={`w-4 h-4 flex-shrink-0 ${isExpiringSoon ? 'text-red-500' : 'text-gray-500'}`}
+        className={`w-4 h-4 flex-shrink-0 ${colorClass}`}
         fill="none"
         stroke="currentColor"
         viewBox="0 0 24 24"
@@ -47,7 +47,7 @@ function ExpirationInfo({ expDate, isExpiringSoon }: { expDate: Date; isExpiring
           d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
         />
       </svg>
-      <span className={`text-xs font-medium ${isExpiringSoon ? 'text-red-600' : 'text-gray-600'}`}>
+      <span className={`text-xs font-medium ${colorClass}`}>
         Expires: {format(expDate, 'MMM d, yyyy')}
       </span>
     </span>
@@ -65,9 +65,21 @@ export default function IngredientCard({
   onEdit,
 }: IngredientCardProps) {
   const expDate = expirationDate ? new Date(expirationDate) : undefined;
-  const isExpiringSoon = expDate
-    ? expDate.getTime() - new Date().getTime() < 7 * 24 * 60 * 60 * 1000
-    : false;
+  
+  let expirationColorClass = 'text-gray-600'; // Default color
+  if (expDate) {
+    const today = new Date();
+    const diffInTime = expDate.getTime() - today.getTime();
+    const diffInDays = Math.ceil(diffInTime / (1000 * 3600 * 24));
+
+    if (diffInDays < 0) {
+      expirationColorClass = 'text-red-600'; // Expired (less than 0 days left)
+    } else if (diffInDays <= 7) {
+      expirationColorClass = 'text-yellow-600'; // Expiring within a week (0 to 7 days left)
+    } else {
+      expirationColorClass = 'text-green-600'; // More than a week left
+    }
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 max-w-xs w-full mx-auto">
@@ -116,8 +128,8 @@ export default function IngredientCard({
         </div>
         {/* Quantity info */}
         <QuantityInfo quantity={quantity} unit={unit} />
-        {/* Expiration info */}
-        {expDate && <ExpirationInfo expDate={expDate} isExpiringSoon={isExpiringSoon} />}
+        {/* Expiration info - pass the calculated color class */}
+        {expDate && <ExpirationInfo expDate={expDate} colorClass={expirationColorClass} />}
       </div>
     </div>
   );
