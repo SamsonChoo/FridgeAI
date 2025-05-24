@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { RecipeHistory } from '@/generated/prisma';
 
 export async function GET() {
   try {
     const history = await prisma.recipeHistory.findMany({
       orderBy: {
-        timestamp: 'desc',
+        createdAt: 'desc',
       },
     });
 
     // Parse the JSON strings back to objects
-    const parsedHistory = history.map(entry => ({
+    const parsedHistory = history.map((entry: RecipeHistory) => ({
       ...entry,
       options: JSON.parse(entry.options),
       ingredients: JSON.parse(entry.ingredients),
@@ -29,26 +30,23 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const history = await prisma.recipeHistory.create({
+
+    // Validate and ensure options and ingredients are stringified JSON
+    const optionsString = typeof data.options === 'object' ? JSON.stringify(data.options) : data.options;
+    const ingredientsString = typeof data.ingredients === 'object' ? JSON.stringify(data.ingredients) : data.ingredients;
+
+    const recipeHistory = await prisma.recipeHistory.create({
       data: {
         suggestion: data.suggestion,
-        options: JSON.stringify(data.options),
-        ingredients: JSON.stringify(data.ingredients),
+        options: optionsString,
+        ingredients: ingredientsString,
       },
     });
-
-    // Parse the JSON strings back to objects for the response
-    const parsedHistory = {
-      ...history,
-      options: JSON.parse(history.options),
-      ingredients: JSON.parse(history.ingredients),
-    };
-
-    return NextResponse.json(parsedHistory);
+    return NextResponse.json(recipeHistory);
   } catch (error) {
     console.error('Error creating recipe history:', error);
     return NextResponse.json(
-      { error: 'Failed to create recipe history' },
+      { error: 'Failed to save recipe history' },
       { status: 500 }
     );
   }
