@@ -57,18 +57,37 @@ export default function RootLayout({
           </div>
         </main>
         <script
+          id="sw-register"
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(
-                    function(registration) {
-                      console.log('ServiceWorker registration successful');
-                    },
-                    function(err) {
-                      console.log('ServiceWorker registration failed: ', err);
-                    }
-                  );
+                window.addEventListener('load', async function() {
+                  try {
+                    // Fetch the service worker version
+                    const versionResponse = await fetch('/sw-version.json');
+                    const { version } = await versionResponse.json();
+                    
+                    // Register the service worker with the version as a query parameter
+                    navigator.serviceWorker.register(\`/sw.js?v=\${version}\`).then(
+                      function(registration) {
+                        console.log('ServiceWorker registration successful with version:', version);
+                      },
+                      function(err) {
+                        console.log('ServiceWorker registration failed: ', err);
+                      }
+                    );
+                  } catch (error) {
+                    console.error('Failed to fetch service worker version:', error);
+                    // Fallback to registering without version if fetching fails
+                    navigator.serviceWorker.register('/sw.js').then(
+                      function(registration) {
+                        console.log('ServiceWorker registration successful (fallback)');
+                      },
+                      function(err) {
+                        console.log('ServiceWorker registration failed (fallback): ', err);
+                      }
+                    );
+                  }
                 });
               }
             `,
