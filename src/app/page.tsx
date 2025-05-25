@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import IngredientCard from '@/components/IngredientCard';
 import AddIngredientModal from '@/components/AddIngredientModal';
 import RecipeSuggestion from '@/components/RecipeSuggestion';
@@ -38,6 +38,7 @@ export default function Home() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [allowMissingIngredients, setAllowMissingIngredients] = useState(false);
   const [recipeHistory, setRecipeHistory] = useState<RecipeHistoryEntry[]>([]);
+  const [sortOrder, setSortOrder] = useState<'expiryAsc' | 'expiryDesc' | 'nameAsc' | 'nameDesc' | 'recencyAsc' | 'recencyDesc'>('recencyDesc');
   const router = useRouter();
 
   // Load data on mount
@@ -67,6 +68,45 @@ export default function Home() {
       console.error('Error loading history:', error);
     }
   };
+
+  // Function to sort ingredients
+  const sortedIngredients = useMemo(() => {
+    let sortableIngredients = [...ingredients];
+
+    switch (sortOrder) {
+      case 'expiryAsc':
+        sortableIngredients.sort((a, b) => {
+          const dateA = a.expirationDate ? new Date(a.expirationDate).getTime() : Infinity;
+          const dateB = b.expirationDate ? new Date(b.expirationDate).getTime() : Infinity;
+          return dateA - dateB;
+        });
+        break;
+      case 'expiryDesc':
+        sortableIngredients.sort((a, b) => {
+          const dateA = a.expirationDate ? new Date(a.expirationDate).getTime() : -Infinity;
+          const dateB = b.expirationDate ? new Date(b.expirationDate).getTime() : -Infinity;
+          return dateB - dateA;
+        });
+        break;
+      case 'nameAsc':
+        sortableIngredients.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'nameDesc':
+        sortableIngredients.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 'recencyAsc':
+        // Assuming 'addedDate' or similar field exists for recency, using createdAt or id for now
+        // If you have a specific 'addedDate', use that instead.
+        // For now, using ingredient ID or default date field as a proxy for recency
+        sortableIngredients.sort((a, b) => new Date(a.addedDate || '').getTime() - new Date(b.addedDate || '').getTime());
+        break;
+      case 'recencyDesc':
+        // Assuming 'addedDate' or similar field exists for recency
+         sortableIngredients.sort((a, b) => new Date(b.addedDate || '').getTime() - new Date(a.addedDate || '').getTime());
+        break;
+    }
+    return sortableIngredients;
+  }, [ingredients, sortOrder]);
 
   // Handle adding a new ingredient
   const handleAddIngredient = async () => {
@@ -181,6 +221,27 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Sorting Controls */}
+        {ingredients.length > 0 && (
+          <div className="mb-6 flex justify-end items-center">
+            <label htmlFor="sortOrder" className="block text-sm font-medium text-gray-700 mr-2">Sort by:</label>
+            <select
+              id="sortOrder"
+              name="sortOrder"
+              className="mt-1 block w-48 pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value as any)}
+            >
+              <option value="recencyDesc">Recency (Newest First)</option>
+              <option value="recencyAsc">Recency (Oldest First)</option>
+              <option value="expiryAsc">Expiry Date (Soonest)</option>
+              <option value="expiryDesc">Expiry Date (Latest)</option>
+              <option value="nameAsc">Name (A-Z)</option>
+              <option value="nameDesc">Name (Z-A)</option>
+            </select>
+          </div>
+        )}
+
         {/* Empty state */}
         {ingredients.length === 0 ? (
           <section className="text-center py-8">
@@ -225,9 +286,9 @@ export default function Home() {
           </section>
         ) : (
           <>
-            {/* Ingredient grid */}
+            {/* Ingredient grid - use sortedIngredients */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-              {ingredients.map((ingredient) => (
+              {sortedIngredients.map((ingredient) => (
                 <IngredientCard
                   key={ingredient.id}
                   name={ingredient.name}
